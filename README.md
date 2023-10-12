@@ -12,8 +12,8 @@
 ## Files
 
 * `transcribe_reader.py` contains classes for interacting the the Transcribe .xsc file format.
-* `bar_analysis.py` uses the QM Vamp plugin to determine the location of bar markers in a sound file.
-* `add_transcribe_bars.py` uses the above two modules to read a Transcribe .xsc file; analyse the bar locations in the sound file it references; then write the measure markers back to the .xsc file. This file can be run on the command line to modify Transcribe files directly.
+* `audio_analysis.py` uses the QM Vamp plugin to determine the location of bar markers and sections in a sound file.
+* `add_transcribe_bars.py` uses the above two modules to read a Transcribe .xsc file; analyse the bar locations in the sound file it references; then write the measure markers back to the .xsc file. Optionally it can also create section markers for Transcribe. This file can be run on the command line to modify Transcribe files directly.
 
 There are also two Jupyter notebooks which demonstrate how the analysis works and how the parts all fit together:
 

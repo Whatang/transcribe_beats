@@ -1,4 +1,5 @@
-from bar_analysis import AudioData
+import sys
+from audio_analysis import AudioData
 from transcribe_reader import TranscribeData, TranscribeLine
 from pathlib import Path
 
@@ -15,8 +16,17 @@ def make_transcribe_bar_markers(data: AudioData) -> list[TranscribeLine]:
     ]
 
 
+def convert_transcribe_markers_to_sections(
+    bar_markers: list[TranscribeLine], section_indexes: list[int]
+) -> None:
+    for section_bar_index in section_indexes:
+        bar = bar_markers[section_bar_index + 1]
+        assert bar.fields[2] == str(section_bar_index + 1)
+        bar.line_type = "S"
+
+
 def calculate_bar_markers(
-    path: str | Path, output_path: None | str | Path = None
+    path: str | Path, output_path: None | str | Path = None, do_sections=False
 ) -> None:
     if isinstance(path, str):
         path = Path(path)
@@ -34,20 +44,34 @@ def calculate_bar_markers(
     print(f"Mean tempo is {mean_temp:.2f} bpm")
     print("Calculating bar markers")
     marker_section = make_transcribe_bar_markers(audio)
+    if do_sections:
+        print("Calculating sections")
+        section_indexes = audio.get_section_bar_markers()
+        convert_transcribe_markers_to_sections(marker_section, section_indexes)
     print(f"Writing new bar markers to {output_path}")
     transcribe.replace_section("Markers", marker_section)
     with output_path.open(mode="w") as handle:
         print("\n".join(transcribe.write()), file=handle)
 
 
-def main():
-    import sys
+def usage():
+    path = Path(sys.argv[0])
+    print(f"{path.name} [-s] INPUT_FILE [OUTPUT_FILE]")
+    sys.exit(1)
 
-    if len(sys.argv) < 2 or len(sys.argv) > 3:
-        path = Path(sys.argv[0])
-        print(f"{path.name} INPUT_FILE [OUTPUT_FILE]")
-        sys.exit(1)
-    calculate_bar_markers(sys.argv[1], sys.argv[2] if len(sys.argv) == 3 else None)
+
+def main():
+    args = sys.argv[1:]
+    if not args:
+        usage()
+    do_sections = args[0] == "-s"
+    if do_sections:
+        args = args[1:]
+    if not args or len(args) > 2:
+        usage()
+    if len(args) == 1:
+        args.append(None)
+    calculate_bar_markers(args[0], args[1], do_sections=do_sections)
 
 
 if __name__ == "__main__":

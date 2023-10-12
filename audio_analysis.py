@@ -12,6 +12,7 @@ import vamp
 
 QM_BEAT_TRACKER = "qm-vamp-plugins:qm-barbeattracker"
 QM_TEMPO_TRACKER = "qm-vamp-plugins:qm-tempotracker"
+QM_SECTION_DETECT = "qm-vamp-plugins:qm-segmenter"
 
 
 @dataclass
@@ -31,6 +32,11 @@ class AudioData:
         def to_transcribe_time(self) -> str:
             v = self.timestamp.values()
             return f"{v[0]//3600:01d}:{v[0]//60:02d}:{v[0]%60:02d}.{v[1]//1000}"
+
+    @dataclass
+    class SectionMarker:
+        label: str
+        timestamp: Any  # Actually vampyhost.RealTime
 
     @classmethod
     def from_file(cls, path: Path) -> AudioData:
@@ -73,3 +79,24 @@ class AudioData:
                 )
             )
         ]
+
+    def get_sections(self) -> list[AudioData.SectionMarker]:
+        sections = vamp.collect(self.data, self.rate, QM_SECTION_DETECT)["list"]
+        return [
+            AudioData.SectionMarker(timestamp=x["timestamp"], label=x["label"])
+            for x in sections
+        ]
+
+    def get_section_bar_markers(self) -> list[int]:
+        bars = iter(self.get_bars())
+        sections = iter(self.get_sections())
+        indexes = []
+        try:
+            next_section = next(sections)
+            for bar in bars:
+                if bar.timestamp > next_section.timestamp:
+                    indexes.append(bar.bar_number)
+                    next_section = next(sections)
+        except StopIteration:
+            pass
+        return indexes
